@@ -20,7 +20,7 @@ y_ = tf.placeholder(tf.float32, shape=[None, OUT_SHAPE])
 x_image = x
 
 #first convolutional layer
-W_conv1 = weight_variable([5, 5, 3, 24])
+W_conv1 = weight_variable([5, 5, 3, 24]) ## [filter_width, filter_height, depth_image_in, depth_image_out]
 b_conv1 = bias_variable([24])
 
 h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1, 2) + b_conv1)

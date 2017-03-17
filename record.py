@@ -9,6 +9,8 @@ matplotlib.use('WXAgg')
 from datetime import datetime
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigCanvas
+# from PyQt4.QtGui import QPixmap, QApplication
+from PIL import Image
 
 from utils import take_screenshot, XboxController
 
@@ -48,8 +50,8 @@ class MainWindow(wx.Frame):
         self.record_panel = wx.Panel(self)
 
         # Images
-        img = wx.Image(320,240)
-        self.image_widget = wx.StaticBitmap(self.img_panel, wx.ID_ANY, wx.Bitmap(img))
+        # img = wx.Image(320,240)
+        # self.image_widget = wx.StaticBitmap(self.img_panel, wx.ID_ANY, wx.Bitmap(img))
 
         # Joystick
         self.init_plot()
@@ -96,7 +98,8 @@ class MainWindow(wx.Frame):
 
 
     def poll(self):
-        self.bmp = take_screenshot()
+        # self.bmp = take_screenshot()
+        self.imgX = take_screenshot()
         self.controller_data = self.controller.read()
         self.update_plot()
 
@@ -111,7 +114,7 @@ class MainWindow(wx.Frame):
 
     def save_data(self):
         image_file = self.outputDir+'/'+'img_'+str(self.t)+'.png'
-        self.bmp.SaveFile(image_file, wx.BITMAP_TYPE_PNG)
+        self.imgX.save(image_file, 'png')
 
         # make / open outfile
         outfile = open(self.outputDir+'/'+'data.csv', 'a')
@@ -125,9 +128,12 @@ class MainWindow(wx.Frame):
 
     def draw(self):
         # Image
-        img = self.bmp.ConvertToImage()
-        img = img.Rescale(320,240)
-        self.image_widget.SetBitmap( img.ConvertToBitmap() )
+        # img = self.imgX.ConvertToImage()
+        # print type(self.imgX)
+        # sz = 320,240
+        # self.imgX.thumbnail(sz, Image.ANTIALIAS)
+        # print type(self.imgX)
+        # self.image_widget.SetBitmap( self.imgX.tobitmap() )
 
         # Joystick
         x = np.asarray(self.plotData)

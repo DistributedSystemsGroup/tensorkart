@@ -1,15 +1,16 @@
 #!/usr/bin/env python
-
 import sys
 import array
 import pygame
-
 import wx
 wx.App()
 
 import numpy as np
 
 from PIL import Image
+# from PyQt4.QtGui import QPixmap, QApplication
+# from datetime import datetime
+from Xlib import display, X
 
 from skimage.color import rgb2gray
 from skimage.transform import resize
@@ -22,13 +23,25 @@ import matplotlib.image as mpimg
 
 
 def take_screenshot():
-    screen = wx.ScreenDC()
-    bmp = wx.Bitmap(Screenshot.SRC_W, Screenshot.SRC_H)
-    mem = wx.MemoryDC(bmp)
-    mem.Blit(0, 0, Screenshot.SRC_W, Screenshot.SRC_H, screen, Screenshot.OFFSET_X, Screenshot.OFFSET_Y)
-    return bmp
 
+    # screen = wx.ScreenDC()
+    # bmp = wx.Bitmap(Screenshot.SRC_W, Screenshot.SRC_H)
+    # mem = wx.MemoryDC(bmp)
+    # mem.Blit(0, 0, Screenshot.SRC_W, Screenshot.SRC_H, screen, Screenshot.OFFSET_X, Screenshot.OFFSET_Y)
+    # return bmp
 
+    # date = datetime.now()
+    # filename = date.strftime('%Y-%m-%d_%H-%M-%S.png')
+    # app = QApplication(sys.argv)
+    # bmp = QPixmap.grabWindow(QApplication.desktop().winId(), Screenshot.OFFSET_X, Screenshot.OFFSET_Y, Screenshot.SRC_W, Screenshot.SRC_H)
+    # bmp.save(filename, 'png')
+
+    dsp = display.Display()
+    root = dsp.screen().root
+    raw = root.get_image(0, 0, Screenshot.SRC_W, Screenshot.SRC_H, X.ZPixmap, 0xffffffff)
+    image = Image.frombytes("RGB", (Screenshot.SRC_W, Screenshot.SRC_H), raw.data, "raw", "BGRX")
+    # image.save(filename,'png')
+    return image
 
 def prepare_image(img):
     if(type(img) == wx._core.Bitmap):

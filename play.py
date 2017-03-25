@@ -7,7 +7,8 @@ import tensorflow as tf
 import model
 import threading
 from termcolor import cprint
-
+import json
+import random
 PORT_NUMBER = 8082
 
 # Start session
@@ -20,6 +21,32 @@ saver.restore(sess, "./model.ckpt")
 
 # Init contoller for manual override
 real_controller = XboxController()
+
+class ControllerState(object):
+    def __init__(self):
+        self.START_BUTTON = 0
+        self.Z_TRIG = 0
+        self.B_BUTTON = 0
+        self.A_BUTTON = 0
+        self.R_TRIG = 0
+        self.L_TRIG = 0
+        self.X_AXIS = 0
+        self.Y_AXIS = 0
+
+def amp(steer):
+    # threshold = 20
+    # gain = 1.8
+    threshold = 25
+    gain = 1.9
+    if steer > threshold:
+        steer *= gain
+        if steer > 80:
+            steer = 80
+    if steer < -threshold:
+        steer *= gain
+        if steer < -80:
+            steer = -80
+    return steer
 
 # Play
 class myHandler(BaseHTTPRequestHandler):
@@ -34,8 +61,9 @@ class myHandler(BaseHTTPRequestHandler):
         if (not manual_override):
 
             ## Look
-            bmp = take_screenshot()
-            vec = prepare_image(bmp)
+            image = take_screenshot()
+            vec = prepare_image(image)
+
 
             ## Think
             joystick = model.y.eval(session=sess, feed_dict={model.x: [vec], model.keep_prob: 1.0})[0]
@@ -47,13 +75,15 @@ class myHandler(BaseHTTPRequestHandler):
 
         ## Act
 
-        ### calibration
+        ####### amplification
+        steer = amp(int(joystick[0] * 80))
+
         output = [
-            int(joystick[0] * 80),
-            int(joystick[1] * 80),
-            int(round(joystick[2])),
-            int(round(joystick[3])),
-            int(round(joystick[4])),
+            steer, # LEFT RIGHT ANALOG
+            int(joystick[1] * 80), #  UP DOWN ANALOG
+            int(round(joystick[2])), # A
+            int(round(joystick[3])), # X
+            int(round(joystick[4])), # RB
         ]
 
         ### print to console
@@ -62,11 +92,15 @@ class myHandler(BaseHTTPRequestHandler):
         else:
             cprint("AI: " + str(output), 'green')
 
-        ### respond with action
+        json_output = ControllerState()
+        json_output.X_AXIS = steer
+        json_output.Y_AXIS = int(joystick[1] * 80)
+        json_output.A_BUTTON = int(round(joystick[2]))
+
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
-        self.wfile.write(output)
+        self.wfile.write(json.dumps(json_output.__dict__))
         return
 
 

@@ -9,55 +9,68 @@ import numpy as np
 
 from PIL import Image
 # from PyQt4.QtGui import QPixmap, QApplication
-# from datetime import datetime
+from datetime import datetime
 from Xlib import display, X
 
 from skimage.color import rgb2gray
 from skimage.transform import resize
 from skimage.io import imread
 from skimage.util import img_as_float
+from skimage.io._plugins.pil_plugin import (pil_to_ndarray, ndarray_to_pil, _palette_is_grayscale)
+import skimage.io as sio
+
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import time
 
 
 
 def take_screenshot():
 
+    # ORIGINAL
     # screen = wx.ScreenDC()
     # bmp = wx.Bitmap(Screenshot.SRC_W, Screenshot.SRC_H)
     # mem = wx.MemoryDC(bmp)
     # mem.Blit(0, 0, Screenshot.SRC_W, Screenshot.SRC_H, screen, Screenshot.OFFSET_X, Screenshot.OFFSET_Y)
     # return bmp
 
-    # date = datetime.now()
-    # filename = date.strftime('%Y-%m-%d_%H-%M-%S.png')
-    # app = QApplication(sys.argv)
-    # bmp = QPixmap.grabWindow(QApplication.desktop().winId(), Screenshot.OFFSET_X, Screenshot.OFFSET_Y, Screenshot.SRC_W, Screenshot.SRC_H)
-    # bmp.save(filename, 'png')
-
+    # ALTERNATIVE
+    # http://stackoverflow.com/questions/69645/take-a-screenshot-via-a-python-script-linux
     dsp = display.Display()
     root = dsp.screen().root
     raw = root.get_image(0, 0, Screenshot.SRC_W, Screenshot.SRC_H, X.ZPixmap, 0xffffffff)
     image = Image.frombytes("RGB", (Screenshot.SRC_W, Screenshot.SRC_H), raw.data, "raw", "BGRX")
+    # date = datetime.now()
+    # filename = date.strftime('%Y-%m-%d_%H-%M-%S.png')
+    # filename = str(time.time())
+    # print(type(image))
     # image.save(filename,'png')
     return image
 
+
 def prepare_image(img):
-    if(type(img) == wx._core.Bitmap):
-        img.CopyToBuffer(Screenshot.image_array)
-        img = np.frombuffer(Screenshot.image_array, dtype=np.uint8)
 
-    img = img.reshape(Screenshot.SRC_H, Screenshot.SRC_W, Screenshot.SRC_D)
+    # ORIGINAL
+    # if(type(img) == wx._core.Bitmap):
+    #     img.CopyToBuffer(Screenshot.image_array) # img = pixel data
+    #     img = np.frombuffer(Screenshot.image_array, dtype=np.uint8) # in object exposing buffer interface out ndarray
+    # img = img.reshape(Screenshot.SRC_H, Screenshot.SRC_W, Screenshot.SRC_D)
+    # im = Image.fromarray(img)
+    # im = im.resize((Screenshot.IMG_W, Screenshot.IMG_H))
+    # im_arr = np.frombuffer(im.tobytes(), dtype=np.uint8) # in object exposing buffer interface out ndarray
+    # im_arr = im_arr.reshape((Screenshot.IMG_H, Screenshot.IMG_W, Screenshot.IMG_D)) # 200, 66, 3
+    # return img_as_float(im_arr) # in ndarray out ndarray of float64 
 
-    im = Image.fromarray(img)
+    # ALTERNATIVE
+    if str(type(img)) == "<class 'PIL.Image.Image'>":
+        img = pil_to_ndarray(img)
+    ndar = img.reshape(Screenshot.SRC_H, Screenshot.SRC_W, Screenshot.SRC_D)
+    im = Image.fromarray(ndar)
     im = im.resize((Screenshot.IMG_W, Screenshot.IMG_H))
-
-    im_arr = np.frombuffer(im.tobytes(), dtype=np.uint8)
-    im_arr = im_arr.reshape((Screenshot.IMG_H, Screenshot.IMG_W, Screenshot.IMG_D))
-
-    return img_as_float(im_arr)
-
+    im_arr = np.frombuffer(im.tobytes(), dtype=np.uint8) # in object exposing buffer interface out ndarray
+    im_arr = im_arr.reshape((Screenshot.IMG_H, Screenshot.IMG_W, Screenshot.IMG_D)) # 200, 66, 3
+    return img_as_float(im_arr) # in ndarray out ndarray of float64 
 
 class Screenshot:
     SRC_W = 615
@@ -89,7 +102,7 @@ class XboxController:
         x = self.joystick.get_axis(0)
         y = self.joystick.get_axis(1)
         a = self.joystick.get_button(0)
-        b = self.joystick.get_button(2) # b=1, x=2
+        b = self.joystick.get_button(2)
         rb = self.joystick.get_button(5)
         return [x, y, a, b, rb]
 
@@ -126,7 +139,7 @@ class Data(object):
 
 
 def load_sample(sample):
-    image_files = np.loadtxt(sample + '/data.csv', delimiter=',', dtype=str, usecols=(0,))
+    image_files = np.loadtxt(sample + '/data.csv', delimiter=',', dtype=str, usecols=(0,)) #luigi_raceway1/data.csv
     joystick_values = np.loadtxt(sample + '/data.csv', delimiter=',', usecols=(1,2,3,4,5))
     return image_files, joystick_values
 
@@ -181,7 +194,7 @@ def prepare(samples):
     y = []
 
     for sample in samples:
-        print sample
+        print sample # e.g. luigi_raceway1
 
         # load sample
         image_files, joystick_values = load_sample(sample)
@@ -191,8 +204,8 @@ def prepare(samples):
 
         # load, prepare and add images to X
         for image_file in image_files:
-            image = imread(image_file)
-            vec = prepare_image(image)
+            image = imread(image_file) # returns ndarray
+            vec = prepare_image(image) 
             X.append(vec)
 
     print "Saving to file..."
@@ -211,3 +224,4 @@ if __name__ == '__main__':
         viewer(sys.argv[2])
     elif sys.argv[1] == 'prepare':
         prepare(sys.argv[2:])
+

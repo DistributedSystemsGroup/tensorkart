@@ -1,5 +1,6 @@
 samples/**
 MarioKart64.z64
+image.py
 *.pyc
 *.npy
 checkpoint

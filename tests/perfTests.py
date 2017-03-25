@@ -3,12 +3,14 @@
 import sys
 import time
 import array
-
+from Xlib import display, X
 import wx
 wx.App()
 
 from skimage.transform import resize
 from skimage.util import img_as_float
+from skimage.io._plugins.pil_plugin import (pil_to_ndarray, ndarray_to_pil, _palette_is_grayscale)
+import skimage.io as sio
 
 import numpy as np
 
@@ -43,6 +45,13 @@ def modified_take_screenshot():
     mem.Blit(0, 0, SRC_W, SRC_H, screen, OFFSET_X, OFFSET_Y)
     return bmp
 
+def alternative_take_screenshot():
+    dsp = display.Display()
+    root = dsp.screen().root
+    raw = root.get_image(0, 0, SRC_W, SRC_H, X.ZPixmap, 0xffffffff)
+    image = Image.frombytes("RGB", (SRC_W, SRC_H), raw.data, "raw", "BGRX")
+    return image
+
 
 def original_prepare_image(img):
     buf = img.ConvertToImage().GetData()
@@ -67,7 +76,15 @@ def modified_prepare_image(img):
     im_arr = np.frombuffer(im.tobytes(), dtype=np.uint8)
     im_arr = im_arr.reshape((IMG_H, IMG_W, IMG_D))
 
-    return img_as_float(im_arr)
+def alternative_prepare_image(image):
+    if str(type(image)) == "<class 'PIL.Image.Image'>":
+      image = pil_to_ndarray(image)
+    ndar = image.reshape(SRC_H, SRC_W, SRC_D)
+    im = Image.fromarray(ndar)
+    im = im.resize((IMG_W, IMG_H))
+    im_arr = np.frombuffer(im.tobytes(), dtype=np.uint8) # in object exposing buffer interface out ndarray
+    im_arr = im_arr.reshape((IMG_H, IMG_W, IMG_D)) # 200, 66, 3
+
 
 
 def call_original():
@@ -78,6 +95,10 @@ def call_original():
 def call_modified():
     bmp = modified_take_screenshot()
     vec = modified_prepare_image(bmp)
+
+def call_alternative():
+    bmp = alternative_take_screenshot()
+    vec = alternative_prepare_image(bmp)
 
 
 if __name__ == '__main__':
@@ -90,14 +111,17 @@ if __name__ == '__main__':
 
   print("# Running tests " + str(n) + " times")
 
-  print("#")
-  print("# ORIGINAL:")
-  print(timeit.timeit("call_original()", setup="from __main__ import call_original;", number=n))
+  # print("#")
+  # print("# ORIGINAL:")
+  # print(timeit.timeit("call_original()", setup="from __main__ import call_original;", number=n))
 
-  print("#")
-  print("# MODIFIED:")
-  print(timeit.timeit("call_modified()", setup="from __main__ import call_modified;", number=n))
+  # print("#")
+  # print("# MODIFIED:")
+  # print(timeit.timeit("call_modified()", setup="from __main__ import call_modified;", number=n))
  
+  print("#")
+  print("# ALTERNATIVE:")
+  print(timeit.timeit("call_alternative()", setup="from __main__ import call_alternative;", number=n))
 
 ######################################################
 # SOME RESULTS #
@@ -119,6 +143,28 @@ if __name__ == '__main__':
 # MODIFIED:
 # 270.604922056
 #
+
+# Running tests 10 times
+#
+# ALTERNATIVE:
+# 0.150660037994
+  
+# Running tests 100 times
+#
+# ALTERNATIVE:
+# 1.30269503593
+
+# Running tests 200 times
+#
+# ALTERNATIVE:
+# 2.69465994835
+# Running tests 50 times
+#
+# ALTERNATIVE:
+# 0.64985203743
+# 150
+# 1.98458385468
+
 ######################################################
   
 

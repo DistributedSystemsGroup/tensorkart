@@ -9,7 +9,6 @@ matplotlib.use('WXAgg')
 from datetime import datetime
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigCanvas
-# from PyQt4.QtGui import QPixmap, QApplication
 from PIL import Image
 
 from utils import take_screenshot, XboxController

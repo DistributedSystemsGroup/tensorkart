@@ -15,6 +15,7 @@ PORT_NUMBER = 8082
 sess = tf.InteractiveSession()
 sess.run(tf.global_variables_initializer())
 
+gas = 0
 # Load Model
 saver = tf.train.Saver()
 saver.restore(sess, "./model.ckpt")
@@ -34,19 +35,17 @@ class ControllerState(object):
         self.Y_AXIS = 0
 
 def amp(steer):
-    # threshold = 20
-    # gain = 1.8
-    threshold = 25
-    gain = 1.9
+    threshold = 20
+    gain = 1.8
+    # threshold = 25
+    # gain = 1.9
     if steer > threshold:
-        steer *= gain
-        if steer > 80:
-            steer = 80
-    if steer < -threshold:
-        steer *= gain
-        if steer < -80:
-            steer = -80
-    return steer
+        steer = max(gain*steer, 80)
+    elif steer < -threshold:
+        steer = max(gain*steer, -80)
+    # else:
+    #     steer *= 0.5
+    return int(steer)
 
 # Play
 class myHandler(BaseHTTPRequestHandler):
@@ -54,7 +53,7 @@ class myHandler(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
-
+        global gas
         ### determine manual override
         manual_override = real_controller.manual_override()
 
@@ -67,6 +66,8 @@ class myHandler(BaseHTTPRequestHandler):
 
             ## Think
             joystick = model.y.eval(session=sess, feed_dict={model.x: [vec], model.keep_prob: 1.0})[0]
+            gas = 1 - gas
+            joystick[2] =  gas # slow down a bit
 
         else:
             joystick = real_controller.read()
@@ -75,8 +76,9 @@ class myHandler(BaseHTTPRequestHandler):
 
         ## Act
 
+        steer = int(joystick[0] * 80)
         ####### amplification
-        steer = amp(int(joystick[0] * 80))
+        steer = amp(steer)
 
         output = [
             steer, # LEFT RIGHT ANALOG
@@ -91,7 +93,7 @@ class myHandler(BaseHTTPRequestHandler):
             cprint("Manual: " + str(output), 'yellow')
         else:
             cprint("AI: " + str(output), 'green')
-
+        # TODO: include other buttons as in controller.c (input-bot)
         json_output = ControllerState()
         json_output.X_AXIS = steer
         json_output.Y_AXIS = int(joystick[1] * 80)

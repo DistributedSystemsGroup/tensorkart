@@ -64,12 +64,12 @@ def prepare_image(img):
 
     # ALTERNATIVE
     if str(type(img)) == "<class 'PIL.Image.Image'>":
-        img = pil_to_ndarray(img)
-    ndar = img.reshape(Screenshot.SRC_H, Screenshot.SRC_W, Screenshot.SRC_D)
-    im = Image.fromarray(ndar)
-    im = im.resize((Screenshot.IMG_W, Screenshot.IMG_H))
-    im_arr = np.frombuffer(im.tobytes(), dtype=np.uint8) # in object exposing buffer interface out ndarray
-    im_arr = im_arr.reshape((Screenshot.IMG_H, Screenshot.IMG_W, Screenshot.IMG_D)) # 200, 66, 3
+        img = img.resize((Screenshot.IMG_W, Screenshot.IMG_H)) # 200, 66
+    else:
+        img = img.reshape(Screenshot.SRC_H, Screenshot.SRC_W, Screenshot.SRC_D)
+        img = Image.fromarray(img)
+        img = img.resize((Screenshot.IMG_W, Screenshot.IMG_H))
+    im_arr = pil_to_ndarray(img)
     return img_as_float(im_arr) # in ndarray out ndarray of float64 
 
 class Screenshot:
@@ -113,9 +113,13 @@ class XboxController:
 
 
 class Data(object):
-    def __init__(self):
-        self._X = np.load("data/X.npy")
-        self._y = np.load("data/y.npy")
+    def __init__(self, test=0):
+        if test == 1:
+            self._X = np.load("test_data/X.npy")
+            self._y = np.load("test_data/y.npy")
+        else:        
+            self._X = np.load("data/X.npy")
+            self._y = np.load("data/y.npy")
         self._epochs_completed = 0
         self._index_in_epoch = 0
         self._num_examples = self._X.shape[0]
@@ -140,7 +144,8 @@ class Data(object):
 
 def load_sample(sample):
     image_files = np.loadtxt(sample + '/data.csv', delimiter=',', dtype=str, usecols=(0,)) #luigi_raceway1/data.csv
-    joystick_values = np.loadtxt(sample + '/data.csv', delimiter=',', usecols=(1,2,3,4,5))
+#    joystick_values = np.loadtxt(sample + '/data.csv', delimiter=',', usecols=(1,2,3,4,5))
+    joystick_values = np.loadtxt(sample + '/data.csv', delimiter=',', usecols=(1,3))
     return image_files, joystick_values
 
 
@@ -187,9 +192,10 @@ def viewer(sample):
 
 
 # prepare training data
-def prepare(samples):
+def prepare(samples, test=0):
     print "Preparing data"
-
+    if test == 1:
+        print "for TEST"
     X = []
     y = []
 
@@ -212,8 +218,12 @@ def prepare(samples):
     X = np.asarray(X)
     y = np.concatenate(y)
 
-    np.save("data/X", X)
-    np.save("data/y", y)
+    if test == 1:
+        np.save("test_data/X", X)
+        np.save("test_data/y", y)
+    else:
+        np.save("data/X", X)
+        np.save("data/y", y)
 
     print "Done!"
     return
@@ -224,4 +234,6 @@ if __name__ == '__main__':
         viewer(sys.argv[2])
     elif sys.argv[1] == 'prepare':
         prepare(sys.argv[2:])
+    elif sys.argv[1] == 'prepare_test': # python utils.py prepare_test test_data/*
+        prepare(sys.argv[2:], 1)
 

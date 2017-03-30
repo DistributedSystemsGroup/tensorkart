@@ -1,8 +1,15 @@
 samples/**
-MarioKart64.z64
+all_data/**
+data/**
+model0/**
+model1/**
+model2/**
+samples/**
+test_data/
 image.py
 *.pyc
 *.npy
+*.png
 checkpoint
 model.ckpt*
 *.gif

@@ -48,6 +48,7 @@ class MainWindow(wx.Frame):
         self.joy_panel = wx.Panel(self)
         self.record_panel = wx.Panel(self)
 
+        # TODO: convert PIL.Image to bitmap for drawing 
         # Images
         # img = wx.Image(320,240)
         # self.image_widget = wx.StaticBitmap(self.img_panel, wx.ID_ANY, wx.Bitmap(img))
@@ -126,6 +127,8 @@ class MainWindow(wx.Frame):
 
 
     def draw(self):
+
+        # TODO: convert PIL.Image to bitmap for drawing 
         # Image
         # img = self.imgX.ConvertToImage()
         # print type(self.imgX)

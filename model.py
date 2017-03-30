@@ -1,7 +1,7 @@
 import tensorflow as tf
 from utils import Screenshot
 
-OUT_SHAPE = 5
+OUT_SHAPE = 2
 
 def weight_variable(shape):
   initial = tf.truncated_normal(shape, stddev=0.1)

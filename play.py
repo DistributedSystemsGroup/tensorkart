@@ -35,8 +35,8 @@ class ControllerState(object):
         self.Y_AXIS = 0
 
 def amp(steer):
-    threshold = 20
-    gain = 1.8
+    threshold = 15
+    gain = 1.7
     # threshold = 25
     # gain = 1.9
     if steer > threshold:
@@ -66,26 +66,42 @@ class myHandler(BaseHTTPRequestHandler):
 
             ## Think
             joystick = model.y.eval(session=sess, feed_dict={model.x: [vec], model.keep_prob: 1.0})[0]
+            steer = joystick[0]
+            print steer
             gas = 1 - gas
-            joystick[2] =  gas # slow down a bit
+            # gas = 1
+            # joystick[1] =  gas # slow down a bit
+            ####### amplification
+            # steer = amp(int(steer * 80))
+            steer = int(steer * 80)
+            # print steer
+            Y_axis = 0
+
 
         else:
             joystick = real_controller.read()
             joystick[1] *= -1 # flip y (this is in the config when it runs normally)
+            steer = int(joystick[0] * 80)
+            gas = int(joystick[2])
+            Y_axis = int(joystick[1] * 80)
+        # joystick[1] =  0 # Y axis
+        # joystick[3] =  0 # X button
+        # joystick[4] =  0 # RB button
+
 
 
         ## Act
 
-        steer = int(joystick[0] * 80)
-        ####### amplification
-        steer = amp(steer)
 
         output = [
-            steer, # LEFT RIGHT ANALOG
-            int(joystick[1] * 80), #  UP DOWN ANALOG
-            int(round(joystick[2])), # A
-            int(round(joystick[3])), # X
-            int(round(joystick[4])), # RB
+            steer,
+            gas,
+            Y_axis
+            # joystick[0], # LEFT RIGHT ANALOG
+            # joystick[1], #  UP DOWN ANALOG
+            # joystick[2], # A
+            # joystick[3], # X
+            # joystick[4], # RB
         ]
 
         ### print to console
@@ -96,8 +112,8 @@ class myHandler(BaseHTTPRequestHandler):
         # TODO: include other buttons as in controller.c (input-bot)
         json_output = ControllerState()
         json_output.X_AXIS = steer
-        json_output.Y_AXIS = int(joystick[1] * 80)
-        json_output.A_BUTTON = int(round(joystick[2]))
+        json_output.Y_AXIS = Y_axis
+        json_output.A_BUTTON = gas
 
         self.send_response(200)
         self.send_header("Content-type", "text/plain")

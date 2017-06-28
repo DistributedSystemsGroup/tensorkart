@@ -1,9 +1,10 @@
 #!/usr/bin/env python
+import random
 import sys
 import array
-import pygame
-import wx
-wx.App()
+# import pygame
+# import wx
+# wx.App()
 
 import numpy as np
 
@@ -39,7 +40,7 @@ def take_screenshot():
     # http://stackoverflow.com/questions/69645/take-a-screenshot-via-a-python-script-linux
     dsp = display.Display()
     root = dsp.screen().root
-    raw = root.get_image(0, 0, Screenshot.SRC_W, Screenshot.SRC_H, X.ZPixmap, 0xffffffff)
+    raw = root.get_image(0, 50, Screenshot.SRC_W, Screenshot.SRC_H, X.ZPixmap, 0xffffffff)
     image = Image.frombytes("RGB", (Screenshot.SRC_W, Screenshot.SRC_H), raw.data, "raw", "BGRX")
     # date = datetime.now()
     # filename = date.strftime('%Y-%m-%d_%H-%M-%S.png')
@@ -70,11 +71,14 @@ def prepare_image(img):
         img = Image.fromarray(img)
         img = img.resize((Screenshot.IMG_W, Screenshot.IMG_H))
     im_arr = pil_to_ndarray(img)
-    return img_as_float(im_arr) # in ndarray out ndarray of float64 
+    return img_as_float(im_arr) # in ndarray out ndarray of float64 # shape is unchanged
 
 class Screenshot:
     SRC_W = 615
-    SRC_H = 480
+    # SRC_W = 640
+    # SRC_H = 480
+    SRC_H = 220
+    # SRC_H = 180 480 - 300 
     SRC_D = 3
 
     OFFSET_X = 0
@@ -87,39 +91,43 @@ class Screenshot:
     image_array = array.array('B', [0] * (SRC_W * SRC_H * SRC_D));
 
 
-class XboxController:
-    def __init__(self):
-        try:
-            pygame.init()
-            self.joystick = pygame.joystick.Joystick(0)
-            self.joystick.init()
-        except:
-            print 'unable to connect to Xbox Controller'
+# class XboxController:
+#     def __init__(self):
+#         try:
+#             pygame.init()
+#             self.joystick = pygame.joystick.Joystick(0)
+#             self.joystick.init()
+#         except:
+#             print('unable to connect to Xbox Controller')
 
 
-    def read(self):
-        pygame.event.pump()
-        x = self.joystick.get_axis(0)
-        y = self.joystick.get_axis(1)
-        a = self.joystick.get_button(0)
-        b = self.joystick.get_button(2)
-        rb = self.joystick.get_button(5)
-        return [x, y, a, b, rb]
+#     def read(self):
+#         pygame.event.pump()
+#         x = self.joystick.get_axis(0)
+#         y = self.joystick.get_axis(1)
+#         a = self.joystick.get_button(0)
+#         b = self.joystick.get_button(2)
+#         rb = self.joystick.get_button(5)
+#         return [x, y, a, b, rb]
 
 
-    def manual_override(self):
-        pygame.event.pump()
-        return self.joystick.get_button(4) == 1
+#     def manual_override(self):
+#         pygame.event.pump()
+#         return self.joystick.get_button(4) == 1
 
 
 class Data(object):
     def __init__(self, test=0):
         if test == 1:
-            self._X = np.load("test_data/X.npy")
             self._y = np.load("test_data/y.npy")
+            # take only steering
+            # self._y = np.delete(self._y, 1, axis=1)
+            self._X = np.load("test_data/X.npy")
         else:        
-            self._X = np.load("data/X.npy")
             self._y = np.load("data/y.npy")
+            # take only steering
+            # self._y = np.delete(self._y, 1, axis=1)
+            self._X = np.load("data/X.npy")
         self._epochs_completed = 0
         self._index_in_epoch = 0
         self._num_examples = self._X.shape[0]
@@ -145,79 +153,87 @@ class Data(object):
 def load_sample(sample):
     image_files = np.loadtxt(sample + '/data.csv', delimiter=',', dtype=str, usecols=(0,)) #luigi_raceway1/data.csv
 #    joystick_values = np.loadtxt(sample + '/data.csv', delimiter=',', usecols=(1,2,3,4,5))
-    joystick_values = np.loadtxt(sample + '/data.csv', delimiter=',', usecols=(1,3))
+    joystick_values = np.loadtxt(sample + '/data.csv', delimiter=',', usecols=(1,3)) # default float
     return image_files, joystick_values
 
 
-# training data viewer
-def viewer(sample):
-    image_files, joystick_values = load_sample(sample)
+# # training data viewer
+# def viewer(sample):
+#     image_files, joystick_values = load_sample(sample)
 
-    plotData = []
+#     plotData = []
 
-    plt.ion()
-    plt.figure('viewer', figsize=(16, 6))
+#     plt.ion()
+#     plt.figure('viewer', figsize=(16, 6))
 
-    for i in range(len(image_files)):
+#     for i in range(len(image_files)):
 
-        # joystick
-        print i, " ", joystick_values[i,:]
+#         # joystick
+#         print i, " ", joystick_values[i,:]
 
-        # format data
-        plotData.append( joystick_values[i,:] )
-        if len(plotData) > 30:
-            plotData.pop(0)
-        x = np.asarray(plotData)
+#         # format data
+#         plotData.append( joystick_values[i,:] )
+#         if len(plotData) > 30:
+#             plotData.pop(0)
+#         x = np.asarray(plotData)
 
-        # image (every 3rd)
-        if (i % 3 == 0):
-            plt.subplot(121)
-            image_file = image_files[i]
-            img = mpimg.imread(image_file)
-            plt.imshow(img)
+#         # image (every 3rd)
+#         if (i % 3 == 0):
+#             plt.subplot(121)
+#             image_file = image_files[i]
+#             img = mpimg.imread(image_file)
+#             plt.imshow(img)
 
-        # plot
-        plt.subplot(122)
-        plt.plot(range(i,i+len(plotData)), x[:,0], 'r')
-        plt.hold(True)
-        plt.plot(range(i,i+len(plotData)), x[:,1], 'b')
-        plt.plot(range(i,i+len(plotData)), x[:,2], 'g')
-        plt.plot(range(i,i+len(plotData)), x[:,3], 'k')
-        plt.plot(range(i,i+len(plotData)), x[:,4], 'y')
-        plt.draw()
-        plt.hold(False)
+#         # plot
+#         plt.subplot(122)
+#         plt.plot(range(i,i+len(plotData)), x[:,0], 'r')
+#         plt.hold(True)
+#         plt.plot(range(i,i+len(plotData)), x[:,1], 'b')
+#         plt.plot(range(i,i+len(plotData)), x[:,2], 'g')
+#         plt.plot(range(i,i+len(plotData)), x[:,3], 'k')
+#         plt.plot(range(i,i+len(plotData)), x[:,4], 'y')
+#         plt.draw()
+#         plt.hold(False)
 
-        plt.pause(0.0001) # seconds
-        i += 1
+#         plt.pause(0.0001) # seconds
+#         i += 1
 
 
 # prepare training data
 def prepare(samples, test=0):
-    print "Preparing data"
+    print("Preparing data")
     if test == 1:
-        print "for TEST"
+        print("for TEST")
     X = []
     y = []
 
     for sample in samples:
-        print sample # e.g. luigi_raceway1
+        print(sample) # e.g. luigi_raceway1
 
         # load sample
         image_files, joystick_values = load_sample(sample)
 
         # add joystick values to y
-        y.append(joystick_values)
-
-        # load, prepare and add images to X
+        y.append(joystick_values) # list of ndarrays: steering and throttle
+        # y is a list of num_folders ndarrays, each of which has size (num_samples_in_one_folder, 2) 
         for image_file in image_files:
+            # print image_file
             image = imread(image_file) # returns ndarray
             vec = prepare_image(image) 
             X.append(vec)
 
-    print "Saving to file..."
-    X = np.asarray(X)
-    y = np.concatenate(y)
 
+    X = np.asarray(X) # before: list of ndarrays with shape (200, 60)
+    y = np.concatenate(y) 
+    if test == 0:
+        assert len(X) == len(y)
+        # shuffle list of images
+        print("Shuffling...")
+
+        p = np.random.permutation(len(X))
+        X, y = X[p], y[p]
+
+    print("Saving to file...")
     if test == 1:
         np.save("test_data/X", X)
         np.save("test_data/y", y)
@@ -225,15 +241,14 @@ def prepare(samples, test=0):
         np.save("data/X", X)
         np.save("data/y", y)
 
-    print "Done!"
+    print("Done!")
     return
-
 
 if __name__ == '__main__':
     if sys.argv[1] == 'viewer':
         viewer(sys.argv[2])
-    elif sys.argv[1] == 'prepare':
+    elif sys.argv[1] == 'prepare': # python utils.py prepare samples/*
         prepare(sys.argv[2:])
-    elif sys.argv[1] == 'prepare_test': # python utils.py prepare_test test_data/*
+    elif sys.argv[1] == 'prepare_test': # python utils.py prepare_test samples/*
         prepare(sys.argv[2:], 1)
 

@@ -1,0 +1,22 @@
+SEQ_LEN = 10 # length of BPTT
+BATCH_SIZE = 4 # number of sequence fragments used in a single optimization step
+LEFT_CONTEXT = 5 # frames from the past that we append to the left of our input sequence, 3D convolution with "VALID" padding "eats" frames from the left
+
+1) The input image sequences are processed with a 3D convolution stack, where the discrete time axis is interpreted as the first "depth" dimension. That allows the model to learn motion detectors and understand the dynamics of driving. 
+2) The model predicts only the steering angle 
+3) The model is stateful: the two upper layers are a LSTM and a simple RNN, respectively. The predicted angle serves as the input to the next timestep.
+
+The model is optimized jointly for the autoregressive and ground truth modes: in the former, model's own outputs are fed into next timestep, in the latter, real targets are used as the context. Naturally, only autoregressive mode is used at the test time.
+
+We need to chunk it into a number of batches: for this, we will create BATCH_SIZE cursors. Let their starting points be uniformly spaced in our long sequence. We will advance them by SEQ_LEN at each step, creating a BATCH_SIZE x SEQ_LEN matrix of training examples.
+
+The vision module takes a tensor of shape [BATCH_SIZE, LEFT_CONTEXT + SEQ_LEN, HEIGHT, WIDTH, CHANNELS] and outputs a tensor of shape [BATCH_SIZE, SEQ_LEN, 128]. The entire LEFT_CONTEXT is eaten by the 3D convolutions. Well-known tricks like residual connections and layer normalization are used to improve the convergence of the vision module. Dropout between each pair of layers serves as a regularizer.
+
+We also need to define our own recurrent cell because we need to train our model jointly in two conditions: when it uses ground truth history and when it uses its own past predictions as the context for the future predictions.
+
+We define get_initial_state and deep_copy_initial_state functions to be able to preserve the state of our recurrent net between batches. The backpropagation is still truncated by SEQ_LEN.
+
+The loss is composed of two components. The first is the MSE of the steering angle prediction in the autoregressive setting -- that is exactly what interests us in the test time. The second components, weighted by the term aux_cost_weight, is the sum of MSEs for all outputs both in autoregressive and ground truth settings.
+
+We will perform optimization for 100 epochs, doing validation after each epoch. We will keep the model's version that obtains the best performance in terms of the primary loss (autoregressive steering MSE) on the validation set. An aggressive regularization is used (keep_prob=0.25 for dropout), and the validation loss is highly non-monotonical.
+For each version of the model that beats the previous best validation score we will overwrite the checkpoint file and obtain predictions for the challenge test set.

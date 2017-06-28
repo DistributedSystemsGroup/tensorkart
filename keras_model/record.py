@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import numpy as np
 import os
 import shutil
@@ -8,9 +9,8 @@ matplotlib.use('WXAgg')
 from datetime import datetime
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigCanvas
-from PIL import Image
 
-from utils import take_screenshot, XboxController
+from utils import Screenshot, XboxController
 
 IDLE_SAMPLE_RATE = 1500
 SAMPLE_RATE = 200
@@ -47,10 +47,9 @@ class MainWindow(wx.Frame):
         self.joy_panel = wx.Panel(self)
         self.record_panel = wx.Panel(self)
 
-        # TODO: convert PIL.Image to bitmap for drawing 
         # Images
-        # img = wx.Image(320,240)
-        # self.image_widget = wx.StaticBitmap(self.img_panel, wx.ID_ANY, wx.Bitmap(img))
+        img = wx.Image(320,240)
+        self.image_widget = wx.StaticBitmap(self.img_panel, wx.ID_ANY, wx.Bitmap(img))
 
         # Joystick
         self.init_plot()
@@ -97,14 +96,19 @@ class MainWindow(wx.Frame):
 
 
     def poll(self):
-        # self.bmp = take_screenshot()
-        self.imgX = take_screenshot()
+        self.bmp = self.take_screenshot()
         self.controller_data = self.controller.read()
         self.update_plot()
 
         if self.recording == True:
             self.save_data()
 
+    def take_screenshot(self):
+        screen = wx.ScreenDC()
+        bmp = wx.Bitmap(Screenshot.SRC_W, Screenshot.SRC_H)
+        mem = wx.MemoryDC(bmp)
+        mem.Blit(0, 0, Screenshot.SRC_W, Screenshot.SRC_H, screen, Screenshot.OFFSET_X, Screenshot.OFFSET_Y)
+        return bmp
 
     def update_plot(self):
         self.plotData.append(self.controller_data) # adds to the end of the list
@@ -113,7 +117,7 @@ class MainWindow(wx.Frame):
 
     def save_data(self):
         image_file = self.outputDir+'/'+'img_'+str(self.t)+'.png'
-        self.imgX.save(image_file, 'png')
+        self.bmp.SaveFile(image_file, wx.BITMAP_TYPE_PNG)
 
         # make / open outfile
         outfile = open(self.outputDir+'/'+'data.csv', 'a')
@@ -126,15 +130,10 @@ class MainWindow(wx.Frame):
 
 
     def draw(self):
-
-        # TODO: convert PIL.Image to bitmap for drawing 
         # Image
-        # img = self.imgX.ConvertToImage()
-        # print type(self.imgX)
-        # sz = 320,240
-        # self.imgX.thumbnail(sz, Image.ANTIALIAS)
-        # print type(self.imgX)
-        # self.image_widget.SetBitmap( self.imgX.tobitmap() )
+        img = self.bmp.ConvertToImage()
+        img = img.Rescale(320,240)
+        self.image_widget.SetBitmap( img.ConvertToBitmap() )
 
         # Joystick
         x = np.asarray(self.plotData)

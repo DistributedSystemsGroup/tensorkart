@@ -1,10 +1,7 @@
 samples/**
 all_data/**
 data/**
-model0/**
-model1/**
-model2/**
-samples/**
+models/**
 test_data/
 image.py
 *.pyc

@@ -46,6 +46,10 @@ Viewing Samples
 Run `python utils.py viewer samples/luigi_raceway` to view the samples
 
 
+Data Pre-Processing and Augmentation
+---------------
+To improve the perfomances of your AI, you can remove parts of the image which represent noise for the model such as the sky with `python image_editing.py crop samples/*` and the kart with `python image_editing.py remove_mario samples/*`. In addition, you may want to augment your dataset to avoid overfitting. Use `python image_editing.py invert samples/*` to chromatically invert your dataset, `python image_editing.py flip samples/*` to create a mirrored version of a track (remember also to run `./flipper.sh` to flip the steering value of your dataset) and `python image_editing.py darken samples/*` to increase or decrease darkness of your images so as to make it more robust to different driving scenarios.
+
 Preparing Training Data
 -----------------------
 Run `python utils.py prepare samples/*` with an array of sample directories to build an `X` and `y` matrix for training. (zsh will expand samples/* to all the directories. Passing a glob directly also works)
@@ -62,10 +66,23 @@ Run `python utils.py prepare samples/*` with an array of sample directories to b
   [4] button rb
 ```
 
+Preparing Test Data
+-----------------------
+Run `python utils.py prepare_test samples/*` with an array of sample directories to build an `X` and `y` matrix for test. 
+
 
 Training
 --------
 The `train.py` program will train a model using Google's TensorFlow framework and cuDNN for GPU acceleration. Training can take a while (~1 hour) depending on how much data you are training with and your system specs. The program will save the model to disk when it is done.
+
+Layer Visualization
+--------
+Once the model is trained, it is possible to inspect and see what has been "learned". To visualize the first layer's filters, run `python layer_viz.py filters`. Run `python layer_viz.py maps` to show the feature maps, instead. 
+
+
+Test
+--------
+Before attempting a real track and letting your AI drive Mario, you can test your model and see if your predictions are close to the real steering commands and what is the total MSE on a test track. Run `python test.py` to obtain this. How good is your model? Will it be able to safely drive?
 
 
 Play
@@ -81,6 +98,8 @@ mupen64plus --input ~/src/mupen64plus-input-bot/mupen64plus-input-bot.so MarioKa
 
 Future Work / Ideas:
 --------------------
+* If your TensorFlow is configured to run on GPUs, try and train the CNN_LSTM model to obtain [state-of-the-art results](https://github.com/udacity/self-driving-car/tree/master/steering-models/community-models)!
+* How confident is our AI when making predicitons? In a real-life application, it would be more appropriate to report the uncertainty level of your system. To this end, different methodologies can be explored: dividing the steering angle into "bins" and transform the problem into a classification task, or delve into more powerful [probabilistic models](https://github.com/mauriziofilippone/deep_gp_random_features).   
 * Could also have a shadow mode where the AI just draws out what it would do rather than sending actions. A real self driving car would have this and use it a lot before letting it take the wheel.
 * Add a reinforcement layer based on lap time or other metrics so that the AI can start to teach itself now that it has a baseline.
 * Deep learning is all about data; perhaps a community could form around collecting a large amount of data and pushing the performance of this AI.
@@ -89,7 +108,7 @@ Future Work / Ideas:
 Special Thanks To
 -----------------
 * https://github.com/SullyChen/Autopilot-TensorFlow
-
+* https://github.com/udacity/self-driving-car/tree/master/steering-models/community-models/komanda
 
 Contributing
 ------------

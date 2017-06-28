@@ -40,23 +40,23 @@ def show_filters():
 	# only first layer filters make sense (according to Karpathy - cs231n)
 	layer = model.W_conv1
 	print model.flattened_length
-	# n_filters = int(layer.get_shape().as_list()[3])
-	# tmp = layer
-	# tensorFilters = tf.split(tmp, n_filters, 3) # 24 x (5, 5, 3, 1) list of 24 tensors
-	# plt.figure(1, figsize=(12,9))
-	# n_columns = 6
-	# n_rows = n_filters / n_columns
-	# for i in range(n_filters):
-	# 	im = sess.run(tensorFilters[i])
-	# 	im = im.reshape((5,5,3))
-	# 	plt.subplot(n_rows, n_columns, i+1)
-	# 	plt.gca().get_xaxis().set_visible(False)
-	# 	plt.gca().get_yaxis().set_visible(False)
-	# 	plt.title('Kernel ' + str(i))
-	# 	plt.imshow(im)
-	# plt.suptitle('Kernels visualization', fontsize=20)
-	# plt.show()
-	# plt.savefig('kernels_visualization.png')
+	n_filters = int(layer.get_shape().as_list()[3])
+	tmp = layer
+	tensorFilters = tf.split(tmp, n_filters, 3) # 24 x (5, 5, 3, 1) list of 24 tensors
+	plt.figure(1, figsize=(12,9))
+	n_columns = 6
+	n_rows = n_filters / n_columns
+	for i in range(n_filters):
+		im = sess.run(tensorFilters[i])
+		im = im.reshape((5,5,3))
+		plt.subplot(n_rows, n_columns, i+1)
+		plt.gca().get_xaxis().set_visible(False)
+		plt.gca().get_yaxis().set_visible(False)
+		plt.title('Kernel ' + str(i))
+		plt.imshow(im)
+	plt.suptitle('Kernels visualization', fontsize=20)
+	plt.show()
+	plt.savefig('kernels_visualization.png')
 
 
 # visualize feature maps

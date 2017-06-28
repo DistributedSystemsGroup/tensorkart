@@ -74,11 +74,9 @@ def prepare_image(img):
     return img_as_float(im_arr) # in ndarray out ndarray of float64 # shape is unchanged
 
 class Screenshot:
-    SRC_W = 615
-    # SRC_W = 640
+    SRC_W = 640
     # SRC_H = 480
     SRC_H = 220
-    # SRC_H = 180 480 - 300 
     SRC_D = 3
 
     OFFSET_X = 0
